@@ -103,7 +103,7 @@ def exportJson(DIR, data):
 # %% main
 
 
-def FastLabler(path_images, data={}, bound_selection=True, save_dict=True, save_json=False, path_annotations=None, rect_null=[-1, -1, -1, -1], show_legend=True, alpha=0.8):
+def FastLabeler(path_images, data={}, bound_selection=True, save_dict=True, save_json=False, path_annotations=None, rect_null=[-1, -1, -1, -1], show_legend=True, alpha=0.8):
     if not path_annotations:
         path_annotations = path_images
 
@@ -128,7 +128,7 @@ def FastLabler(path_images, data={}, bound_selection=True, save_dict=True, save_
         img_legend = cv2.imread(img_path)  # original with legend
         bounds = img.shape[1::-1]
         scale = bounds[1]/720
-        for idx, (letter, description) in enumerate([("L", "Toggle Legend"), ("A", "Add New Label"), ("Z", "Previous Frame"), ("X", "Next Frame"), ("Rclick", "Add Lebel and Next Frame/Null Annotation"), ("Lclick", "Selection"), ("Mclick", "Toggle Selection Mode"), ("0-9", "Change Label"), ("E", "Edit Mode"), ("D", "Delete Annotation"), ("S", "Save and Quit"), ("Q", "Cancel")]):
+        for idx, (letter, description) in enumerate([("L", "Toggle Legend"), ("A", "Add New Label"), ("Z", "Previous Frame"), ("X", "Next Frame"), ("Rclick", "Add Label and Next Frame/Null Annotation"), ("Lclick", "Selection"), ("Mclick", "Toggle Selection Mode"), ("0-9", "Change Label"), ("E", "Edit Mode"), ("D", "Delete Annotation"), ("S", "Save and Quit"), ("Q", "Cancel")]):
             cv2.putText(img_legend, letter, (0, idx * int(24*scale) + int(24*scale)),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7*scale, (255, 255, 255), 1)
             cv2.putText(img_legend, description, (int(120*scale), idx * int(24*scale) + int(24*scale)),
