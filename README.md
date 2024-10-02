@@ -53,6 +53,16 @@ The function `FastLabeler` returns the session data so you can resume later.
 | `alpha` | alpha value of old annotations | `0.8` |
 
 
-a lightweight and fast annotation utility for your object localization projects
+## Other Ways to Save and Restore old Sessions
+
+You can automatically save the session data as either a single dictionary file or as separate JSON files for each picture. The second approach makes it very convenient to merge multiple different sessions.
+
+To manually create the JSON files from a dictionary you can use the
+`exportJson(label_path, data)` utility. Make sure to include it your script first via `from fast_labeler import exportJson`.
+
+To create a dictionary file to pass to `FastLabeler` from one or more older labeling sessions you can use
+`loadJson(label_path, data={})`. The second argument is an exsisting dictionary. Its entries will be overwritten in case there are duplicates. Note that currently, the directores are not only name but also directory sensetive.
+
+
 
 

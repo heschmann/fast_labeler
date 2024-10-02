@@ -91,15 +91,23 @@ def __processRect(rect_loc, label_selector, bounds, bound_selection, rect_null):
     return [*rect_loc, label_selector]
 
 
-def exportJson(DIR, data):
+def exportJson(label_path, data):
     for key, value in data.items():
         annotation = {}
         annotation['image'] = key
         annotation['bboxes'] = value
         # saves the json file at the specified location with the corresponding name of the image
-        with open(os.path.join(DIR, f'{os.path.basename(key).split(".")[0]}.json'), 'w') as p:
+        with open(os.path.join(label_path, f'{os.path.basename(key).split(".")[0]}.json'), 'w') as p:
             json.dump(annotation, p)
 
+
+def loadJson(label_path, data={}):
+    for label_name in os.listdir(label_path):
+        if label_name.endswith(".json"):
+            with open(os.path.join(label_path, label_name), 'r') as f:
+                label = json.load(f)
+                data[label['image']] = label['bboxes']
+    return data
 # %% main
 
 
@@ -158,7 +166,7 @@ def FastLabeler(path_images, data={}, bound_selection=True, save_dict=True, save
         while True:
             key = cv2.waitKey(15)
             if key != -1:
-                key = ord(chr(key).lower()) # to lowercase
+                key = ord(chr(key).lower())  # to lowercase
             update_background = False
             update_selection = False
             if not cv2.getWindowProperty(img_path, cv2.WND_PROP_VISIBLE):
@@ -227,8 +235,10 @@ def FastLabeler(path_images, data={}, bound_selection=True, save_dict=True, save
             if key == ord('a') and not edit_mode:
                 update_background = True  # remove selection
                 if len(coordinates) == 0 or rect != rect_null:
-                    print(__processRect(rect, label_selector, bounds, bound_selection, rect_null))
-                    coordinates.append(__processRect(rect, label_selector, bounds, bound_selection, rect_null))
+                    print(__processRect(rect, label_selector,
+                          bounds, bound_selection, rect_null))
+                    coordinates.append(__processRect(
+                        rect, label_selector, bounds, bound_selection, rect_null))
                     rect = rect_null
 
             if key == ord('l'):
