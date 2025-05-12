@@ -15,32 +15,40 @@ def __mouse_callback(event, x, y, flags, params):
     if event == cv2.EVENT_MBUTTONDOWN:
         # switches between xi, yi midpoint and rectangle edge
         print('Switched selection mode!')
-        m_state = not m_state
+        m_state += 1
+        m_state = m_state % 3
+        if m_state == 2:
+            rectangle = True
 
     if event == cv2.EVENT_LBUTTONDOWN:
         rectangle = True
         ix, iy = x, y
 
     if event == cv2.EVENT_MOUSEMOVE and rectangle:
-        if m_state:
+        if m_state == 0:
             w = 2 * abs(ix-x)
             h = 2 * abs(iy-y)
             rect = [int(ix-w/2), int(iy-h/2), int(w), int(h)]
-        else:
+        elif m_state == 1:
             w = abs(ix-x)
             h = abs(iy-y)
             rect = [min(ix, x), min(iy, y), abs(ix-x), abs(iy-y)]
+        else:
+            rect = [x, y, 0, 0]
 
     if event == cv2.EVENT_LBUTTONUP:
-        rectangle = False
-        if m_state:
+        if m_state == 0:
+            rectangle = False
             w = 2 * abs(ix-x)
             h = 2 * abs(iy-y)
             rect = [int(ix-w/2), int(iy-h/2), int(w), int(h)]
-        else:
+        elif m_state == 1:
+            rectangle = False
             w = abs(ix-x)
             h = abs(iy-y)
             rect = [min(ix, x), min(iy, y), abs(ix-x), abs(iy-y)]
+        else:
+            rect = [x, y, 0, 0]
 
 
 def __processBackground(img_background, coordinates, alpha, rect_null, edit_selector, scale):
@@ -55,25 +63,43 @@ def __processBackground(img_background, coordinates, alpha, rect_null, edit_sele
                 col = (0, 255, 0)
                 alpha_cur = alpha
             old_background = np.zeros_like(img_background, np.uint8)
-            cv2.rectangle(old_background, (rect_loc[0], rect_loc[1]), (
-                rect_loc[0]+rect_loc[2], rect_loc[1]+rect_loc[3]), col, 2)
-            cv2.rectangle(old_background, (rect_loc[0]-1, rect_loc[1]),
-                          (rect_loc[0]+int(30*scale), rect_loc[1]-int(38*scale)), col, thickness=-1)
+            if rect_loc[2] == 0 and rect_loc[3] == 0:
+                linewidth = int(25*scale/2)
+                offset = linewidth
+                cv2.line(old_background, (rect_loc[0]-linewidth, rect_loc[1]),
+                         (rect_loc[0]+linewidth, rect_loc[1]), col, 1)
+                cv2.line(old_background, (rect_loc[0], rect_loc[1]-linewidth),
+                         (rect_loc[0], rect_loc[1]+linewidth), col, 1)
+            else:
+                offset = 0
+                cv2.rectangle(old_background, (rect_loc[0], rect_loc[1]), (
+                    rect_loc[0]+rect_loc[2], rect_loc[1]+rect_loc[3]), col, 2)
+            cv2.rectangle(old_background, (rect_loc[0]-1+offset, rect_loc[1]-offset),
+                          (rect_loc[0]+int(30*scale)+offset, rect_loc[1]-int(38*scale)-offset), col, thickness=-1)
             mask = old_background.astype(bool)
             img_background[mask] = cv2.addWeighted(
                 img_background, alpha_cur, old_background, 1 - alpha_cur, 0)[mask]
             cv2.putText(img_background, str(
-                label_loc), (rect_loc[0], rect_loc[1]-3), cv2.FONT_HERSHEY_SIMPLEX, 1.3*scale, col, 2)
+                label_loc), (rect_loc[0]+offset, rect_loc[1]-3-offset), cv2.FONT_HERSHEY_SIMPLEX, 1.3*scale, col, 2)
 
 
 def __processSelection(img, rect_loc, label_loc, rect_null, scale):
     if rect_loc != rect_null:
-        cv2.rectangle(img, (rect_loc[0], rect_loc[1]), (rect_loc[0] +
-                      rect_loc[2], rect_loc[1]+rect_loc[3]), (0, 255, 0), 2)
-        cv2.rectangle(img, (rect_loc[0]-1, rect_loc[1]),
-                      (rect_loc[0]+int(30*scale), rect_loc[1]-int(38*scale)), (0, 255, 0), thickness=-1)
+        if rect_loc[2] == 0 and rect_loc[3] == 0:
+            linewidth = int(25*scale/2)
+            offset = linewidth
+            cv2.line(img, (rect_loc[0]-linewidth, rect_loc[1]),
+                     (rect_loc[0]+linewidth, rect_loc[1]), (0, 255, 0), 1)
+            cv2.line(img, (rect_loc[0], rect_loc[1]-linewidth),
+                     (rect_loc[0], rect_loc[1]+linewidth), (0, 255, 0), 1)
+        else:
+            offset = 0
+            cv2.rectangle(img, (rect_loc[0], rect_loc[1]), (rect_loc[0] +
+                                                            rect_loc[2], rect_loc[1]+rect_loc[3]), (0, 255, 0), 2)
+        cv2.rectangle(img, (rect_loc[0]-1+offset, rect_loc[1]-offset),
+                      (rect_loc[0]+int(30*scale)+offset, rect_loc[1]-int(38*scale)-offset), (0, 255, 0), thickness=-1)
         cv2.putText(img, str(
-            label_loc), (rect_loc[0], rect_loc[1]-3), cv2.FONT_HERSHEY_SIMPLEX, 1.3*scale, (255, 255, 255), 2)
+            label_loc), (rect_loc[0]+offset, rect_loc[1]-3-offset), cv2.FONT_HERSHEY_SIMPLEX, 1.3*scale, (255, 255, 255), 2)
 
 
 def __processRect(rect_loc, label_selector, bounds, bound_selection, rect_null):
@@ -125,7 +151,7 @@ def FastLabeler(path_images, data={}, bound_selection=True, save_dict=True, save
     label_selector = 0
     iFrame = 0
     global rectangle, rect, ix, iy, m_state
-    m_state = False
+    m_state = 0
     while True:
         img_path = files[iFrame]
         rectangle = False

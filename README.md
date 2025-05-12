@@ -18,6 +18,10 @@ This is what the edit mode looks like. You enter/exit it by pressing "E". The cu
 
 ![alt text](Pics/cats_editor.png)
 
+In the third selection mode you are able to make point selections alongside your rectangular selections. Points are just bounding boxes with zero width and height.
+
+![alt text](Pics/points.png)
+
 ## Keyboard and Mouse Controls
 
 | Input  | Description |
@@ -28,7 +32,7 @@ This is what the edit mode looks like. You enter/exit it by pressing "E". The cu
 | `X` | next frame, current selection is not saved |
 | `Right CLick` | Add the bounding box at the current selection, and proceed to the next frame. When you only have one label, you can label all the pictures using only your mouse! Right-clicking without any selection adds an empty annotation, which tells your deep learning algorithm that you labeled the picture, but no object is actually on screen. These pictures will add negative samples to your data set and will make the algorithm more robust. |
 | `Left Click` | starts a new selection when in selection mode |
-| `Middle Click` | toggles the selection mode, i.e., either two corners of the bounding box or its center point and one corner point |
+| `Middle Click` | toggles the selection mode, i.e., either two corners of the bounding box, its center point and one corner point, or point selection |
 | `0-9` | selects the label for the current selection in either the selection or editing mode |
 | `E` | enters edit mode in case there is anything to edit |
 | `D` | deletes the bounding box for the current selection in editing mode |
