@@ -7,10 +7,12 @@ import json
 
 
 def __mouse_callback(event, x, y, flags, params):
-    global rectangle, rect, ix, iy, m_state
+    global rectangle, rect, ix, iy, m_state, close_window
 
     if event == cv2.EVENT_RBUTTONDOWN:
-        cv2.destroyAllWindows()
+        # cv2.destroyAllWindows()
+        close_window = True
+
 
     if event == cv2.EVENT_MBUTTONDOWN:
         # switches between xi, yi midpoint and rectangle edge
@@ -51,9 +53,10 @@ def __mouse_callback(event, x, y, flags, params):
             rect = [x, y, 0, 0]
 
 
-def __processBackground(img_background, coordinates, alpha, rect_null, edit_selector, scale):
+def __processBackground(img_background, coordinates, alpha, rect_null, edit_selector, scale, zoom):
     for idx, coordinate in enumerate(coordinates):
         rect_loc = coordinate[:4]
+        rect_loc = [int(float(i)*zoom) for i in rect_loc]
         if rect_loc != rect_null:
             label_loc = coordinate[-1]
             if idx == edit_selector:
@@ -102,9 +105,10 @@ def __processSelection(img, rect_loc, label_loc, rect_null, scale):
             label_loc), (rect_loc[0]+offset, rect_loc[1]-3-offset), cv2.FONT_HERSHEY_SIMPLEX, 1.3*scale, (255, 255, 255), 2)
 
 
-def __processRect(rect_loc, label_selector, bounds, bound_selection, rect_null):
+def __processRect(rect_loc, label_selector, bounds, bound_selection, rect_null, zoom):
     if rect_loc == rect_null:
         return [*rect_null, -1]
+    rect_loc = [float(i)/zoom for i in rect_loc]
     if bound_selection:
         for dim, limit in enumerate(bounds):
             # low edges
@@ -137,7 +141,7 @@ def loadJson(label_path, data={}):
 # %% main
 
 
-def FastLabeler(path_images, data={}, bound_selection=True, save_dict=True, save_json=False, path_annotations=None, rect_null=[-1, -1, -1, -1], show_legend=True, alpha=0.8):
+def FastLabeler(path_images, data={}, bound_selection=True, save_dict=True, save_json=False, path_annotations=None, rect_null=[-1, -1, -1, -1], show_legend=True, alpha=0.8, zoom=1.0):
     if not path_annotations:
         path_annotations = path_images
 
@@ -150,22 +154,29 @@ def FastLabeler(path_images, data={}, bound_selection=True, save_dict=True, save
     quit = False
     label_selector = 0
     iFrame = 0
-    global rectangle, rect, ix, iy, m_state
+    global rectangle, rect, ix, iy, m_state, close_window
     m_state = 0
     while True:
+        close_window = False
         img_path = files[iFrame]
-        rectangle = False
-        rect = rect_null
+        if m_state == 2:
+            rectangle = True # activate selection (keep previous selection)
+        else:
+            rectangle = False # disable selection
+            rect = rect_null # reset previous selection
 
         img = cv2.imread(img_path)  # current picture
-        img_orig = cv2.imread(img_path)  # original picture
-        img_legend = cv2.imread(img_path)  # original with legend
+        img = cv2.resize(img, None, fx=zoom, fy=zoom, interpolation=cv2.INTER_LINEAR)
+        img_orig = img.copy()  # original picture
+        img_legend = img.copy()  # original with legend
         bounds = img.shape[1::-1]
-        scale = bounds[1]/720
-        for idx, (letter, description) in enumerate([("L", "Toggle Legend"), ("A", "Add New Label"), ("Z", "Previous Frame"), ("X", "Next Frame"), ("Rclick", "Add Label and Next Frame/Null Annotation"), ("Lclick", "Selection"), ("Mclick", "Toggle Selection Mode"), ("0-9", "Change Label"), ("E", "Edit Mode"), ("D", "Delete Annotation"), ("S", "Save and Quit"), ("Q", "Cancel")]):
+        scale = bounds[1]/720 # applied after zoom (will rescale accordingly)
+        for idx, (letter, description) in enumerate([("L", "Toggle Legend"), ("A", "Add New Label"), ("Z", "Previous Frame"), ("X", "Next Frame"), ("M/Rclick", "Add Label and Next Frame/Null Annotation"), ("Lclick", "Selection"), ("Mclick", "Toggle Selection Mode"), ("0-9", "Change Label"), ("E", "Edit Mode"), ("D", "Delete Annotation"), ("J", "Zoom Out"), ("K", "Zoom In"), ("S", "Save and Quit"), ("Q", "Cancel")]):
             cv2.putText(img_legend, letter, (0, idx * int(24*scale) + int(24*scale)),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7*scale, (255, 255, 255), 1)
             cv2.putText(img_legend, description, (int(120*scale), idx * int(24*scale) + int(24*scale)),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7*scale, (255, 255, 255), 1)
+        cv2.putText(img_legend, f'Zoom Level: {zoom:.2f}', (0, int(img.shape[0]-0.7*scale/2)),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7*scale, (255, 255, 255), 1)
         if show_legend:
             img = img_legend.copy()
@@ -177,7 +188,7 @@ def FastLabeler(path_images, data={}, bound_selection=True, save_dict=True, save
         if img_path in data:
             coordinates = data[img_path]
             __processBackground(img_background, coordinates,
-                                alpha, rect_null, -1, scale)
+                                alpha, rect_null, -1, scale, zoom)
         else:
             coordinates = []
 
@@ -195,17 +206,15 @@ def FastLabeler(path_images, data={}, bound_selection=True, save_dict=True, save
                 key = ord(chr(key).lower())  # to lowercase
             update_background = False
             update_selection = False
-            if not cv2.getWindowProperty(img_path, cv2.WND_PROP_VISIBLE):
-                edit_mode = False
-                # only add rect_null if coordinates is empty
-                if len(coordinates) == 0 or rect != rect_null:
-                    print(__processRect(rect, label_selector,
-                          bounds, bound_selection, rect_null))
-                    coordinates.append(__processRect(
-                        rect, label_selector, bounds, bound_selection, rect_null))
-                    rect = rect_null
-                iFrame = (iFrame + 1) % len(files)
-                break
+            if key == ord('m'):
+                close_window = True
+            
+            try:
+                if not cv2.getWindowProperty(img_path, cv2.WND_PROP_VISIBLE):
+                    edit_mode = False # reopen current image
+                    break
+            except:
+                pass
             if key == ord('e'):
                 edit_mode = not edit_mode
                 # only enter edit mode when there is something to edit
@@ -258,18 +267,39 @@ def FastLabeler(path_images, data={}, bound_selection=True, save_dict=True, save
             if rectangle:
                 update_selection = True
                 img[:] = img_background[:]  # remove previous selection
-            if key == ord('a') and not edit_mode:
+            if (key == ord('a') and not edit_mode):
                 update_background = True  # remove selection
                 if len(coordinates) == 0 or rect != rect_null:
                     print(__processRect(rect, label_selector,
-                          bounds, bound_selection, rect_null))
+                          bounds, bound_selection, rect_null, zoom))
                     coordinates.append(__processRect(
-                        rect, label_selector, bounds, bound_selection, rect_null))
-                    rect = rect_null
+                        rect, label_selector, bounds, bound_selection, rect_null, zoom))
+                    rect = rect_null  # remove selection
 
             if key == ord('l'):
                 show_legend = not show_legend
                 update_background = True
+
+            if key == ord('j') and zoom > 0.2:
+                zoom -= 0.1
+                cv2.destroyWindow(img_path)
+                break
+                
+            if key == ord('k'):
+                zoom += 0.1
+                cv2.destroyWindow(img_path)
+                break
+
+            if close_window:
+                # upon right click/m save current selection close window
+                if len(coordinates) == 0 or rect != rect_null:
+                    print(__processRect(rect, label_selector,
+                          bounds, bound_selection, rect_null, zoom))
+                    coordinates.append(__processRect(
+                        rect, label_selector, bounds, bound_selection, rect_null, zoom))
+                iFrame = (iFrame + 1) % len(files)
+                cv2.destroyWindow(img_path)
+                break
 
             # reset background and add annotations back
             if update_background:
@@ -278,7 +308,7 @@ def FastLabeler(path_images, data={}, bound_selection=True, save_dict=True, save
                 else:
                     img_background = img_orig.copy()
                 __processBackground(img_background, coordinates,
-                                    alpha, rect_null, edit_selector, scale)
+                                    alpha, rect_null, edit_selector, scale, zoom)
                 img = img_background.copy()
 
             # add selection if not in edit mode

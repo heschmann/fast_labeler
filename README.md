@@ -30,12 +30,14 @@ In the third selection mode you are able to make point selections alongside your
 | `A` | add bounding box at current selection |
 | `Z` | previous frame, the current selection is not saved |
 | `X` | next frame, current selection is not saved |
-| `Right CLick` | Add the bounding box at the current selection, and proceed to the next frame. When you only have one label, you can label all the pictures using only your mouse! Right-clicking without any selection adds an empty annotation, which tells your deep learning algorithm that you labeled the picture, but no object is actually on screen. These pictures will add negative samples to your data set and will make the algorithm more robust. |
+| `W/Right CLick` | Add the bounding box at the current selection, and proceed to the next frame. When you only have one label, you can label all the pictures using only your mouse! Right-clicking without any selection adds an empty annotation, which tells your deep learning algorithm that you labeled the picture, but no object is actually on screen. These pictures will add negative samples to your data set and will make the algorithm more robust. |
 | `Left Click` | starts a new selection when in selection mode |
 | `Middle Click` | toggles the selection mode, i.e., either two corners of the bounding box, its center point and one corner point, or point selection |
 | `0-9` | selects the label for the current selection in either the selection or editing mode |
 | `E` | enters edit mode in case there is anything to edit |
 | `D` | deletes the bounding box for the current selection in editing mode |
+| `J` | Zoom out / shrink image |
+| `K` | Zoom in / enlarge image |
 | `S` | saves and closes the Fast Labler; current selection is not saved |
 | `Q` | closes the Fast Labler without saving the current session; current selection is not saved, the FastLabler utility will still return the current session to avoid frustration in case the button was pressed by accident |
 
